@@ -1,5 +1,5 @@
 (function(){
-  var loading_barwidth = 0;
+var loading_barwidth = 0;
 halo.use('loader', function(m){
   m.loader(['images/stage_bg_73d0c060.png',
   'images/bg_all.png',
@@ -22,14 +22,14 @@ halo.use('loader', function(m){
     var SEX_MALE = 0;
     var SEX_FEMALE = 1;
     var GUEST_ENUM = {
-      0: 'wangdongcheng',
-      1: 'duchun',
-      2: 'linyun',
-      3: 'ella',
-      4: 'songxiaobao',
-      5: 'tianliang',
-      6: 'duhaitao',
-      7: 'jialing'
+      0: '汪东城',
+      1: '杜淳',
+      2: '林允',
+      3: 'ELLA',
+      4: '宋小宝',
+      5: '田亮',
+      6: '杜海涛',
+      7: '贾玲'
     };
     var _tool = {
       support3d: ('WebKitCSSMatrix' in window && 'm11' in new WebKitCSSMatrix()),
@@ -61,12 +61,31 @@ halo.use('loader', function(m){
         stage_bg_move: $('#stage_bg_move'),
         sure_btn: $('#sure_btn'),
         stage_game: $('#stage_game'),
+        sex_item: $('.sex_item'),
+        role_item_jiabin: $('.role_item_jiabin'),
+        stage_tips_1: $('.stage_tips_1'),
+        stage_tips_2: $('.stage_tips_2'),
+        stage_tips_3: $('.stage_tips_3'),
+        stage_tips_4: $('.stage_tips_3'),
+        stage_tips_btn_r: $('.stage_tips_btn_r'),
+        stage_tips_btn_l: $('.stage_tips_btn_l'),
+        seconds_num: $('#seconds_num'),
+        score_num: $('#score_num'),
+        bar_red: $('.bar_red'),
+        bar_black: $('.bar_black'),
+        stage_tips_txt: $('#stage_tips_txt'),
       },
       conf: {
         clientWidth: document.body.clientWidth,
         clientHeight: document.body.clientHeight,
         radioWidth: window.screen.width,
         radioHeight: window.screen.height,
+        x_position: 350,
+        thisDom: '',
+        num: 0,
+        clockTime:0,
+        shaked:0,
+        gameClock:'',
       },
       resizeFun : {
         _fixMode: "height",
@@ -132,24 +151,61 @@ halo.use('loader', function(m){
           _pri.node.start_btn.on("click", _pri.util.startGame);
           _pri.node.select_btn_all.on("click",_pri.util.selectFun);
           _pri.node.sure_btn.on("click",_pri.util.startGameFun);
+          _pri.node.stage_tips_1.on("click",_pri.util.hideDom);
+          _pri.node.stage_tips_2.on("click",_pri.util.hideDom);
+          _pri.node.stage_tips_btn_l.on("click",_pri.util.startAgain);
+          _pri.node.stage_tips_btn_r.on("click",_pri.util.share);
       },
       util: {
+        share: function(){
+
+        },
         speed: 10,
+        hideDom: function(){
+          $(this).fadeOut('slow');
+          $(window).on('devicemotion', _pri.util.shakeMove, false);
+          $(_pri.node.role_item_jiabin[_pri.util.selectedGuest[_pri.conf.num+1]]).fadeIn();
+        },
         startGameFun: function(){
+          _pri.util.gameClock();
           var selectedGuest = _pri.util.selectedGuest;
+          var selectedSex = _pri.util.selectedSex;
+          $(_pri.node.sex_item[selectedSex]).fadeIn();
+          $(_pri.node.role_item_jiabin[selectedGuest[0]]).fadeIn();
+          $(_pri.node.role_item_jiabin[selectedGuest[1]]).fadeIn();
+          _pri.conf.thisDom = _pri.node.role_item_jiabin[selectedGuest[_pri.conf.num]];
+          for(var i = 2; i < selectedGuest.length;i++){
+            // $(_pri.node.role_item_jiabin[selectedGuest[i]]).fadeIn();
+          }
           if (selectedGuest.length < 6) {
-            alert('人数不够');
+            alert('嘉宾必须选择6位');
           } else {
             _pri.node.go_select.fadeOut('slow');
             _pri.node.stage_game.fadeIn('slow');
-            _pri.util.startMoveBg();            
+            _pri.util.startMoveBg();
           }
+        },
+        gameClock: function(){
+          _pri.conf.gameClock  = setInterval(function(){
+            _pri.conf.clockTime =   _pri.conf.clockTime+1;
+            $(_pri.node.seconds_num).html(60-_pri.conf.clockTime+ 's');
+            if(_pri.conf.clockTime == 3 && !_pri.conf.shaked){
+              $('.stage_tips_2').fadeIn();
+            }
+            if(_pri.conf.clockTime >= 60){
+              clearInterval(_pri.conf.gameClock);
+              $('.stage_tips_3').fadeIn();
+              clearInterval(clock);
+              return;
+            }
+          },1000);
         },
         startMoveBg: function() {
             var $bg = $('.stage_bg');
             var x = 0;
             function run() {
                 x -= _pri.util.speed;
+
                 if (x <= -4138) {
                   x = 0;
                 }
@@ -159,25 +215,45 @@ halo.use('loader', function(m){
             run();
         },
         shake: function(){
+
           if(window.DeviceMotionEvent) {
+              $(window).on('devicemotion', _pri.util.shakeMove, false);
+          }else{alert('您的设备不支持重力感应');}
+        },
+        shakeMove: function(event){
               var speed = 25;
               var x, y, z, lastX, lastY, lastZ;
               x = y = z = lastX = lastY = lastZ = 0;
-              window.addEventListener('devicemotion', function(event){
-                  var acceleration = event.accelerationIncludingGravity;
-                  x = acceleration.x;
-                  y = acceleration.y;
-                  if(Math.abs(x-lastX) > speed || Math.abs(y-lastY) > speed) {
-                      _pri.node.stage_bg_move.removeClass('speed0').addClass('speednone').addClass('speed3').removeClass('speednone');
-                      // _pri.node.stage_bg_move.css('animation-duration', '3s');
-                      // _pri.node.stage_bg_move.css('-webkit-animation-duration', '3s');
-                      _pri.util.speed = 30;
-                      // alert(_pri.node.stage_bg_move.attr('class'));
-                    };
+              var acceleration = event.accelerationIncludingGravity;
+              x = acceleration.x;
+              y = acceleration.y;
+              if(Math.abs(x-lastX) > speed || Math.abs(y-lastY) > speed) {
+                    _pri.conf.shaked = 1; //摇动过
+                    var sum = Math.abs(x-lastX) + Math.abs(y-lastY);
+                    var x = Math.floor(sum/10);
+                    _pri.conf.x_position = _pri.conf.x_position - x;
+                    if(_pri.conf.x_position <= 0){
+                        $(_pri.conf.thisDom).fadeOut();
+                        $(_pri.node.stage_tips_txt).html(GUEST_ENUM[_pri.util.selectedGuest[_pri.conf.num]]);
+                        $(_pri.node.bar_red[_pri.conf.num]).css('display','none');
+                        _pri.conf.num = _pri.conf.num + 1;
+                        $(_pri.node.score_num).html('X0'+_pri.conf.num);
+                        $(_pri.node.bar_black).css('left',15*_pri.conf.num + '%');
+                        if(_pri.conf.num >= 6){
+                          $('.stage_tips_4').fadeIn();
+                          clearInterval(_pri.conf.gameClock);
+                          return;
+                        }
+                        $('.stage_tips_1').fadeIn();
+                        // alert($(_pri.node.role_item_jiabin[selectedGuest[_pri.conf.num]]));
+                        _pri.conf.thisDom = _pri.node.role_item_jiabin[_pri.util.selectedGuest[_pri.conf.num]];
+                        _pri.conf.x_position = 350;
+                        $(window).off();
+                    }//end of if
+                    $(_pri.conf.thisDom).attr('style','transform: translateX('+ _pri.conf.x_position+ 'px);display:block;');
+                  }
                   lastX = x;
                   lastY = y;
-              }, false);
-          }
         },
         eye_iconAni: function(){
           var clockkkkkk = setTimeout(function(){
@@ -203,13 +279,8 @@ halo.use('loader', function(m){
           }
           _pri.resizeFun.init().addEl($("#go_container"));
           _pri.util.eye_iconAni();
+
           // _pri.node.go_container.css({width:_pri.conf.width,height:_pri.conf.height,});
-        },
-        runBgAni: function(){
-          console.log('runBgAni');
-          var clock  = setInterval(function(){
-            _pri.node.stage_bg_move.animate({'translate3d': '-2069px,0,0'}, 5000,function(){alert(1)});
-          },0);
         },
         startGame: function(){
           $(_pri.node.go_start).fadeOut('ease');
@@ -239,7 +310,7 @@ halo.use('loader', function(m){
             _pri.util.selectedSex = index;
             return _pri.util.toggleSelected($(this));
           }
-          
+
           var selectedIndex = -1;
           var selectedGuest = _pri.util.selectedGuest;
           selectedGuest.forEach(function (item, i) {
